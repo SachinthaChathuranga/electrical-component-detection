@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Electrical Component Detector</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+    input, button { margin: 10px; padding: 10px; }
+    img { max-width: 80%; margin-top: 20px; border: 1px solid #ccc; }
+    ul { text-align: left; display: inline-block; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Electrical Component Detector</h1>
+  <input type="file" id="fileInput" accept="image/*">
+  <button onclick="uploadImage()">Detect Components</button>
+
+  <div id="result">
+    <img id="annotatedImage" src="" alt="">
+    <ul id="detections"></ul>
+  </div>
+
+  <script>
+    const API_URL = "https://smschathuranga-electrical-component-api.hf.space/predict";
+
+    async function uploadImage() {
+      const fileInput = document.getElementById("fileInput");
+      if (!fileInput.files.length) {
+        alert("Please select an image.");
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const detectionsList = document.getElementById("detections");
+      const annotatedImage = document.getElementById("annotatedImage");
+      detectionsList.innerHTML = "";
+      annotatedImage.src = "";
+
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          body: formData
+        });
+
+        if (!res.ok) {
+          alert("Error calling API: " + res.statusText);
+          return;
+        }
+
+        const data = await res.json();
+
+        // Show annotated image
+        annotatedImage.src = data.annotated_image_base64;
+
+        // List detected components
+        data.detections.forEach(det => {
+          const li = document.createElement("li");
+          li.textContent = `${det.name} (conf: ${det.conf.toFixed(2)}) at [${Math.round(det.x1)}, ${Math.round(det.y1)}, ${Math.round(det.x2)}, ${Math.round(det.y2)}]`;
+          detectionsList.appendChild(li);
+        });
+
+      } catch (err) {
+        alert("Error: " + err);
+      }
+    }
+  </script>
+</body>
+</html>
